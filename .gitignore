@@ -1,0 +1,17 @@
+# Environment
+.env
+
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# YOLO model weights (downloaded automatically on startup)
+*.pt
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,17 @@
+# Database
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# Configuration
+pydantic==2.10.6
+pydantic-settings==2.7.1
+
+# API
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Vision
+ultralytics
+opencv-python-headless
