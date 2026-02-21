@@ -1,23 +1,26 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.pipeline.service import PipelineService
+from app.db.repository import CrossingEventRepository
 
 router = APIRouter()
 
 
-@router.post("/snapshot")
-async def snapshot(
-    request: Request,
-    image: UploadFile,
+@router.post("/events")
+def create_event(
     camera_id: str = Form(...),
+    direction: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    image_bytes = await image.read()
-    service = PipelineService(db=db, detector=request.app.state.detector)
-    try:
-        count = service.process(image_bytes, camera_id)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-    return {"camera_id": camera_id, "people_count": count}
+    if direction not in ("entry", "exit"):
+        raise HTTPException(status_code=422, detail="direction must be 'entry' or 'exit'")
+    repo = CrossingEventRepository(db)
+    event = repo.create(camera_id=camera_id, direction=direction)
+    return {"camera_id": event.camera_id, "direction": event.direction, "timestamp": event.timestamp}
+
+
+@router.get("/occupancy/{camera_id}")
+def get_occupancy(camera_id: str, db: Session = Depends(get_db)):
+    repo = CrossingEventRepository(db)
+    return {"camera_id": camera_id, "occupancy": repo.get_occupancy(camera_id)}

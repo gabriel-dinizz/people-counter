@@ -1,73 +1,38 @@
-from typing import Generic, TypeVar, Type, List, Optional
-from datetime import datetime
+from typing import List
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.database import Base
-from app.db.models import PeopleCount
-
-T = TypeVar("T", bound=Base)
+from app.db.models import CrossingEvent
 
 
-class BaseRepository(Generic[T]):
-    """Base repository with common CRUD operations."""
-
-    def __init__(self, model: Type[T], db: Session):
-        self.model = model
+class CrossingEventRepository:
+    def __init__(self, db: Session):
         self.db = db
 
-    def create(self, **kwargs) -> T:
-        """Create a new record."""
-        instance = self.model(**kwargs)
-        self.db.add(instance)
+    def create(self, camera_id: str, direction: str) -> CrossingEvent:
+        event = CrossingEvent(camera_id=camera_id, direction=direction)
+        self.db.add(event)
         self.db.commit()
-        self.db.refresh(instance)
-        return instance
+        self.db.refresh(event)
+        return event
 
-    def get_by_id(self, id: int) -> Optional[T]:
-        """Get a record by ID."""
-        return self.db.query(self.model).filter(self.model.id == id).first()
+    def get_occupancy(self, camera_id: str) -> int:
+        entries = self.db.query(func.count(CrossingEvent.id)).filter(
+            CrossingEvent.camera_id == camera_id,
+            CrossingEvent.direction == "entry",
+        ).scalar() or 0
+        exits = self.db.query(func.count(CrossingEvent.id)).filter(
+            CrossingEvent.camera_id == camera_id,
+            CrossingEvent.direction == "exit",
+        ).scalar() or 0
+        return max(0, entries - exits)
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[T]:
-        """Get all records with pagination."""
-        return self.db.query(self.model).offset(skip).limit(limit).all()
-
-
-class PeopleCountRepository(BaseRepository[PeopleCount]):
-    """Repository for PeopleCount model."""
-
-    def __init__(self, db: Session):
-        super().__init__(PeopleCount, db)
-
-    def get_by_camera_id(
-        self, camera_id: str, skip: int = 0, limit: int = 100
-    ) -> List[PeopleCount]:
-        """Get all counts for a specific camera."""
+    def get_by_camera(self, camera_id: str, limit: int = 100) -> List[CrossingEvent]:
         return (
-            self.db.query(PeopleCount)
-            .filter(PeopleCount.camera_id == camera_id)
-            .order_by(PeopleCount.timestamp.desc())
-            .offset(skip)
+            self.db.query(CrossingEvent)
+            .filter(CrossingEvent.camera_id == camera_id)
+            .order_by(CrossingEvent.timestamp.desc())
             .limit(limit)
             .all()
-        )
-
-    def get_by_date_range(
-        self, start_date: datetime, end_date: datetime, camera_id: Optional[str] = None
-    ) -> List[PeopleCount]:
-        """Get counts within a date range, optionally filtered by camera."""
-        query = self.db.query(PeopleCount).filter(
-            PeopleCount.timestamp >= start_date, PeopleCount.timestamp <= end_date
-        )
-        if camera_id:
-            query = query.filter(PeopleCount.camera_id == camera_id)
-        return query.order_by(PeopleCount.timestamp.desc()).all()
-
-    def get_latest_by_camera(self, camera_id: str) -> Optional[PeopleCount]:
-        """Get the most recent count for a specific camera."""
-        return (
-            self.db.query(PeopleCount)
-            .filter(PeopleCount.camera_id == camera_id)
-            .order_by(PeopleCount.timestamp.desc())
-            .first()
         )
