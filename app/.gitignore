@@ -18,6 +18,9 @@ env/
 *.pt
 *.weights
 
+# Agent runtime
+agent/queue.db
+
 # Alembic
 alembic/versions/*.pyc
 

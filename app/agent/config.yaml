@@ -1,0 +1,8 @@
+camera_source: 0          # int for webcam, or RTSP URL string
+server_url: http://localhost:8000
+camera_id: entrance-main
+yolo_model: yolov8n.pt
+yolo_confidence: 0.4
+line:
+  start: [0, 240]
+  end: [640, 240]
