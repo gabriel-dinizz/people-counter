@@ -17,10 +17,5 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
-    # YOLO Model Settings
-    YOLO_MODEL: str = "yolov8n.pt"
-    YOLO_CONFIDENCE: float = 0.4
-    YOLO_DEVICE: str = "cpu"
-
 
 settings = Settings()
