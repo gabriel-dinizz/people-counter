@@ -6,6 +6,15 @@ PERSON_CLASS = 0
 
 
 class PeopleTracker:
+    """YOLOv8-based multi-object tracker that detects people and maintains
+    persistent track IDs across frames using the built-in BoT-SORT tracker.
+
+    Each call to `track()` returns per-person bounding-box centers (bottom-center
+    point) paired with stable integer IDs suitable for downstream crossing
+    detection. Runs on CPU by default so it can be deployed on edge devices
+    without a GPU.
+    """
+
     def __init__(self, config: AgentConfig):
         self.model = YOLO(config.yolo_model)
         self.confidence = config.yolo_confidence
