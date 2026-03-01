@@ -1,4 +1,5 @@
 import logging
+import yaml
 
 from agent.config import AgentConfig
 from agent.capture import CameraCapture
@@ -27,7 +28,7 @@ def main():
     """
     config = AgentConfig.load()
     log.info("Config loaded: camera_source=%s, camera_id=%s", config.camera_source, config.camera_id)
-
+    log.info("Current config:\n%s", yaml.dump(vars(config), default_flow_style=False))
     tracker = PeopleTracker(config)
     detector = CrossingDetector(config.line_start, config.line_end)
     start_retry_thread(config)
