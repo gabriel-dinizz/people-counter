@@ -1,6 +1,30 @@
 import time
 
 
+class SpatialDeduplicator:
+    """Suppress duplicate crossing events from tracker ID switches.
+
+    Records accepted crossings as (position, timestamp, direction) tuples
+    and rejects new events that occur at a similar position, within a time
+    window, and in the same direction.
+    """
+
+    def __init__(self, time_window: float = 2.0, radius_factor: float = 1.2):
+        self.time_window = time_window
+        self.radius_factor = radius_factor
+        self._recent: list[tuple[float, float, float, str]] = []
+
+    def is_duplicate(self, x: float, y: float, bbox_width: float, direction: str) -> bool:
+        now = time.monotonic()
+        radius = bbox_width * self.radius_factor
+        self._recent = [r for r in self._recent if now - r[2] <= self.time_window]
+        for rx, ry, _rt, rd in self._recent:
+            if rd == direction and ((x - rx) ** 2 + (y - ry) ** 2) <= radius ** 2:
+                return True
+        self._recent.append((x, y, now, direction))
+        return False
+
+
 class CrossingDetector:
     """Detect when tracked people cross a virtual line in the frame.
 
@@ -21,6 +45,7 @@ class CrossingDetector:
         self.line_end = line_end
         self._previous_sides: dict[int, float] = {}
         self._last_crossing: dict[int, float] = {}
+        self._dedup = SpatialDeduplicator()
 
     def _side(self, point: tuple[float, float]) -> float:
         """Cross product to determine which side of the line a point is on."""
@@ -62,11 +87,16 @@ class CrossingDetector:
                 cooldown_ok = (now - self._last_crossing.get(pid, 0)) > self.COOLDOWN_SECONDS
 
                 if cooldown_ok:
+                    direction = None
                     if prev > 0 and side <= 0:
-                        events.append({"id": pid, "direction": "entry"})
-                        self._last_crossing[pid] = now
+                        direction = "entry"
                     elif prev < 0 and side >= 0:
-                        events.append({"id": pid, "direction": "exit"})
+                        direction = "exit"
+                    if direction is not None:
+                        cx, cy = person["center"]
+                        x1, _y1, x2, _y2 = person["bbox"]
+                        if not self._dedup.is_duplicate(cx, cy, x2 - x1, direction):
+                            events.append({"id": pid, "direction": direction})
                         self._last_crossing[pid] = now
 
             self._previous_sides[pid] = side
