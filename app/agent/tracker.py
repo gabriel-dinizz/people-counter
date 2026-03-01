@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from ultralytics import YOLO
 
 from agent.config import AgentConfig
@@ -11,6 +13,7 @@ class PeopleTracker:
     def __init__(self, config: AgentConfig):
         self.model = YOLO(config.yolo_model)
         self.confidence = config.yolo_confidence
+        self.tracker_config = str(Path(__file__).parent / config.tracker_config)
 
     def track(self, frame) -> list[dict]:
         """
@@ -31,6 +34,7 @@ class PeopleTracker:
             conf=self.confidence,
             device="cpu",
             verbose=False,
+            tracker=self.tracker_config,
         )
 
         boxes = results[0].boxes

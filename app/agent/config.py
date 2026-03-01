@@ -25,6 +25,7 @@ class AgentConfig:
     line_end: tuple[int, int]
     yolo_model: str = "yolov8n.pt"
     yolo_confidence: float = 0.4
+    tracker_config: str = "botsort.yaml"
 
     @classmethod
     def load(cls, path: str | Path = None) -> "AgentConfig":
@@ -53,4 +54,5 @@ class AgentConfig:
             line_end=tuple(data["line"]["end"]),
             yolo_model=data.get("yolo_model", "yolov8n.pt"),
             yolo_confidence=data.get("yolo_confidence", 0.4),
+            tracker_config=data.get("tracker_config", "botsort.yaml"),
         )
