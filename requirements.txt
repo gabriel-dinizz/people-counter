@@ -14,4 +14,4 @@ python-multipart
 
 # Vision
 ultralytics
-opencv-python-headless
+opencv-python

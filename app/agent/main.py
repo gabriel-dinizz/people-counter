@@ -1,3 +1,4 @@
+import argparse
 import logging
 import yaml
 
@@ -5,6 +6,7 @@ from agent.config import AgentConfig
 from agent.capture import CameraCapture
 from agent.tracker import PeopleTracker
 from agent.crossing import CrossingDetector
+from agent.display import draw_overlays, show_frame, cleanup
 from agent.sender import send_or_queue, start_retry_thread
 
 logging.basicConfig(
@@ -23,9 +25,16 @@ def main():
     that fail to send are queued locally and retried in a background
     thread.
 
+    Use ``--show`` to open a live OpenCV window displaying the camera
+    feed with crossing line and bounding-box overlays.
+
     Raises:
         RuntimeError: If the configured camera source cannot be opened.
     """
+    parser = argparse.ArgumentParser(description="People counter detection agent")
+    parser.add_argument("--show", action="store_true", help="Show live detection window")
+    args = parser.parse_args()
+
     config = AgentConfig.load()
     log.info("Config loaded: camera_source=%s, camera_id=%s", config.camera_source, config.camera_id)
     log.info("Current config:\n%s", yaml.dump(vars(config), default_flow_style=False))
@@ -52,9 +61,17 @@ def main():
                     event["id"], event["direction"], status,
                 )
 
+            if args.show:
+                draw_overlays(frame, config.line_start, config.line_end, people)
+                if not show_frame(frame):
+                    log.info("Display window closed")
+                    break
+
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         log.info("Shutting down")
+    finally:
+        cleanup()

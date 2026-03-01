@@ -45,6 +45,7 @@ class PeopleTracker:
             people.append({
                 "id": int(track_id),
                 "center": (center_x, bottom_y),
+                "bbox": (int(x1), int(y1), int(x2), int(y2)),
             })
 
         return people
