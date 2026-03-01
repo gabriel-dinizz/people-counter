@@ -34,6 +34,10 @@ def main():
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
 
+    print("=== Current config ===")
+    print(yaml.dump(config, default_flow_style=False), end="")
+    print("======================")
+
     cap = cv2.VideoCapture(config["camera_source"])
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open camera: {config['camera_source']}")
