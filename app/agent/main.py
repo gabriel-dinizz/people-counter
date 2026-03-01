@@ -14,6 +14,17 @@ log = logging.getLogger(__name__)
 
 
 def main():
+    """Run the edge detection agent's main loop.
+
+    Loads configuration, initializes the YOLO tracker and crossing
+    detector, then continuously reads camera frames to detect people
+    and report line-crossing events to the backend server.  Events
+    that fail to send are queued locally and retried in a background
+    thread.
+
+    Raises:
+        RuntimeError: If the configured camera source cannot be opened.
+    """
     config = AgentConfig.load()
     log.info("Config loaded: camera_source=%s, camera_id=%s", config.camera_source, config.camera_id)
 

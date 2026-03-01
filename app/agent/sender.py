@@ -25,7 +25,16 @@ def _init_db(conn):
 
 
 def send_event(config, direction):
-    """POST a crossing event to the server. Returns True on success, False otherwise."""
+    """POST a crossing event to the backend server.
+
+    Args:
+        config: ``AgentConfig`` providing ``server_url`` and ``camera_id``.
+        direction: ``"entry"`` or ``"exit"``.
+
+    Returns:
+        ``True`` if the server responded with HTTP 200, ``False`` on
+        any network or server error.
+    """
     try:
         resp = requests.post(
             f"{config.server_url}/events",
@@ -49,7 +58,16 @@ def _queue_event(config, direction):
 
 
 def send_or_queue(config, direction):
-    """Try to send; if it fails, queue locally for retry."""
+    """Attempt to send a crossing event; fall back to the local queue on failure.
+
+    Args:
+        config: ``AgentConfig`` providing server and camera details.
+        direction: ``"entry"`` or ``"exit"``.
+
+    Returns:
+        ``True`` if the event was delivered to the server, ``False``
+        if it was queued for later retry.
+    """
     if send_event(config, direction):
         return True
     _queue_event(config, direction)
@@ -93,7 +111,18 @@ def _retry_loop(config):
 
 
 def start_retry_thread(config):
-    """Start the background retry thread. Call once at startup."""
+    """Spawn a daemon thread that periodically flushes the local event queue.
+
+    The thread retries queued events every 30 seconds. Call once at
+    agent startup; the thread terminates automatically when the main
+    process exits.
+
+    Args:
+        config: ``AgentConfig`` used to reach the backend server.
+
+    Returns:
+        The started ``threading.Thread`` instance.
+    """
     thread = threading.Thread(target=_retry_loop, args=(config,), daemon=True)
     thread.start()
     return thread

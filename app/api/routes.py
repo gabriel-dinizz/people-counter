@@ -13,6 +13,20 @@ def create_event(
     direction: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    """Record a crossing event reported by an edge agent.
+
+    Args:
+        camera_id: Identifier of the reporting camera.
+        direction: ``"entry"`` or ``"exit"``.
+        db: Database session (injected).
+
+    Returns:
+        Dict with ``camera_id``, ``direction``, and ``timestamp`` of the
+        persisted event.
+
+    Raises:
+        HTTPException: 422 if *direction* is not ``"entry"`` or ``"exit"``.
+    """
     if direction not in ("entry", "exit"):
         raise HTTPException(status_code=422, detail="direction must be 'entry' or 'exit'")
     repo = CrossingEventRepository(db)
@@ -22,5 +36,14 @@ def create_event(
 
 @router.get("/occupancy/{camera_id}")
 def get_occupancy(camera_id: str, db: Session = Depends(get_db)):
+    """Return the current occupancy for a given camera.
+
+    Args:
+        camera_id: The camera to query.
+        db: Database session (injected).
+
+    Returns:
+        Dict with ``camera_id`` and ``occupancy`` (int, >= 0).
+    """
     repo = CrossingEventRepository(db)
     return {"camera_id": camera_id, "occupancy": repo.get_occupancy(camera_id)}

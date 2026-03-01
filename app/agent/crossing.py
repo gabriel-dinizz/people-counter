@@ -2,6 +2,18 @@ import time
 
 
 class CrossingDetector:
+    """Detect when tracked people cross a virtual line in the frame.
+
+    Uses a cross-product sign change between consecutive frames to
+    determine if a person moved from one side of the line to the other.
+    A per-person cooldown prevents duplicate events caused by jitter
+    near the line.
+
+    Args:
+        line_start: ``(x, y)`` pixel coordinate of the line's start.
+        line_end: ``(x, y)`` pixel coordinate of the line's end.
+    """
+
     COOLDOWN_SECONDS = 3.0
 
     def __init__(self, line_start: tuple[int, int], line_end: tuple[int, int]):
@@ -19,6 +31,23 @@ class CrossingDetector:
         return dx * py - dy * px
 
     def update(self, people: list[dict]) -> list[dict]:
+        """Process a new frame's tracked people and emit crossing events.
+
+        Compares each person's current side of the line with their
+        previous side. A sign change (respecting the cooldown) produces
+        an ``"entry"`` or ``"exit"`` event. People who disappear from
+        the frame have their tracking state cleaned up automatically.
+
+        Args:
+            people: List of dicts with ``"id"`` (int) and ``"center"``
+                (tuple of floats), as returned by
+                :meth:`PeopleTracker.track`.
+
+        Returns:
+            List of crossing event dicts, each containing:
+                - ``"id"`` — the person's tracking ID.
+                - ``"direction"`` — ``"entry"`` or ``"exit"``.
+        """
         events = []
         current_ids = set()
 

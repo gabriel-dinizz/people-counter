@@ -16,6 +16,21 @@ def on_mouse(event, x, y, flags, param):
 
 
 def main():
+    """Launch an interactive GUI for defining the crossing line used by the people counter.
+
+    Opens a live camera feed where the user clicks two points to define a
+    crossing line. The line can then be persisted to ``config.yaml`` so
+    the detection agent knows where to count crossings.
+
+    Keyboard controls within the GUI window:
+        s — save the current line to *config.yaml* and exit.
+        r — discard selected points and start over.
+        q / Escape — quit without saving.
+
+    Raises:
+        RuntimeError: If the camera source specified in *config.yaml*
+            cannot be opened.
+    """
     with open(CONFIG_PATH) as f:
         config = yaml.safe_load(f)
 
