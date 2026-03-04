@@ -4,11 +4,30 @@ An edge-computing people counter that uses YOLOv8 to detect people crossing a vi
 
 ## Architecture
 
-```
-┌──────────────────┐         POST /events         ┌──────────────────┐
-│   Edge Agent     │ ──────────────────────────▶   │   FastAPI API    │
-│  (YOLOv8 + CV2)  │   ◀── GET /occupancy/{id} ── │  + PostgreSQL    │
-└──────────────────┘                               └──────────────────┘
+```mermaid
+flowchart LR
+    cam["📷 Camera\n(webcam / file / RTSP)"]
+
+    subgraph agent["Edge Agent"]
+        capture["Capture\n(OpenCV)"]
+        tracker["Tracker\n(YOLOv8 + BoT-SORT)"]
+        crossing["Crossing\nDetector"]
+        queue["Offline Queue\n(SQLite)"]
+    end
+
+    subgraph backend["Backend API"]
+        api["FastAPI"]
+        db[("PostgreSQL")]
+    end
+
+    cam --> capture --> tracker --> crossing
+
+    crossing -- "POST /events" --> api
+    crossing -. "server down" .-> queue
+    queue -. "retry every 30s" .-> api
+
+    api --> db
+    db -- "GET /occupancy" --> api
 ```
 
 - **Edge agent** — captures camera frames, tracks people with YOLOv8, detects line crossings, and sends events to the backend. Queues events locally (SQLite) when the server is unreachable.
